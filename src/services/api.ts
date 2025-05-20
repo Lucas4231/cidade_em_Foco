@@ -119,4 +119,72 @@ export const problemService = {
             throw error;
         }
     }
+};
+
+// Serviço de usuário
+export const userService = {
+    // Criar usuário
+    async create(data: UserCreate) {
+        try {
+            const response = await api.post('/auth/register', data);
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.data) {
+                throw new Error(error.response.data.mensagem || 'Erro ao criar usuário');
+            }
+            throw error;
+        }
+    },
+
+    // Autenticar usuário
+    async authenticate(email: string, password: string) {
+        try {
+            const response = await api.post('/auth/login', { email, password });
+            return response.data as AuthResponse;
+        } catch (error: any) {
+            if (error.response?.data) {
+                throw new Error(error.response.data.mensagem || 'Erro ao fazer login');
+            }
+            throw error;
+        }
+    },
+
+    // Buscar usuário atual
+    async getCurrentUser() {
+        try {
+            const response = await api.get('/user/me');
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.data) {
+                throw new Error(error.response.data.mensagem || 'Erro ao buscar usuário');
+            }
+            throw error;
+        }
+    },
+
+    // Atualizar usuário
+    async update(data: any) {
+        try {
+            const response = await api.put('/user/profile', data);
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.data) {
+                throw new Error(error.response.data.mensagem || 'Erro ao atualizar usuário');
+            }
+            throw error;
+        }
+    },
+
+    // Atualizar foto do perfil
+    async updateProfileImage(imageUrl: string) {
+        try {
+            const response = await api.put('/user/profile-image', { imageUrl });
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.data) {
+                throw new Error(error.response.data.mensagem || 'Erro ao atualizar foto do perfil');
+            }
+            throw error;
+        }
+    }
 }; 
