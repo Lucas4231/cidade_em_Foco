@@ -1,0 +1,122 @@
+import axios from 'axios';
+
+// Cria a instância do axios com a URL base
+const baseURL = 'https://neondb-3yaa.onrender.com/api';
+
+export const api = axios.create({
+    baseURL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    timeout: 30000, // 30 segundos de timeout
+});
+
+// Interceptor para adicionar o token em todas as requisições
+api.interceptors.request.use(
+    (config) => config,
+    (error) => {
+        console.error('Erro na requisição:', error);
+        return Promise.reject(error);
+    }
+);
+
+// Função para fazer retry da requisição
+const retryRequest = async (config: any, retries = 3, delay = 1000) => {
+    try {
+        return await api(config);
+    } catch (error: any) {
+        if (retries === 0) {
+            throw error;
+        }
+        
+        // Aguarda antes de tentar novamente
+        await new Promise(resolve => setTimeout(resolve, delay));
+        
+        // Tenta novamente com um delay maior
+        return retryRequest(config, retries - 1, delay * 2);
+    }
+};
+
+// Interceptor para tratar erros de autenticação
+api.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        // Se o erro for 401 (não autorizado)
+        if (error.response?.status === 401) {
+            return Promise.reject(new Error('Sessão expirada. Por favor, faça login novamente.'));
+        }
+
+        // Se for erro 502 (Bad Gateway) ou 503 (Service Unavailable)
+        if (error.response?.status === 502 || error.response?.status === 503) {
+            return Promise.reject(new Error('Servidor temporariamente indisponível. Por favor, tente novamente em alguns minutos.'));
+        }
+
+        // Se for erro de timeout
+        if (error.code === 'ECONNABORTED') {
+            return Promise.reject(new Error('O servidor está demorando para responder. Por favor, tente novamente.'));
+        }
+
+        // Se for erro de rede
+        if (!error.response) {
+            return Promise.reject(new Error('Erro de conexão. Verifique sua conexão com a internet.'));
+        }
+
+        // Retorna a mensagem de erro do servidor se disponível
+        if (error.response?.data?.mensagem) {
+            return Promise.reject(new Error(error.response.data.mensagem));
+        }
+
+        return Promise.reject(error);
+    }
+);
+
+// Interface para resposta de autenticação
+export interface AuthResponse {
+    user: {
+        idUser: number;
+        nome: string;
+        email: string;
+        level: number;
+    };
+    token: string;
+}
+
+// Interface para criação de usuário
+export interface UserCreate {
+    nome: string;
+    email: string;
+    password: string;
+}
+
+// Interface para resposta de erro
+export interface ApiError {
+    erro?: string;
+    mensagem?: string;
+    error?: string;
+}
+
+// Interface para o relatório de problema
+export interface ProblemReport {
+    photo: FormData;
+    description: string;
+}
+
+// Serviço de problemas
+export const problemService = {
+    // Reportar problema
+    async report(data: FormData) {
+        try {
+            const response = await api.post('/report-problem', data, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.data) {
+                throw new Error(error.response.data.erro || error.response.data.error || 'Erro ao reportar problema');
+            }
+            throw error;
+        }
+    }
+}; 

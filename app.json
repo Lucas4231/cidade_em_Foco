@@ -13,17 +13,31 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Este aplicativo precisa de acesso à câmera para tirar fotos de problemas a serem relatados.",
+        "NSPhotoLibraryUsageDescription": "Este aplicativo precisa de acesso à galeria para selecionar fotos de problemas a serem relatados."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"],
       "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O aplicativo precisa de acesso às suas fotos para permitir o envio de imagens.",
+          "cameraPermission": "O aplicativo precisa de acesso à câmera para tirar fotos."
+        }
+      ]
+    ]
   }
 }
