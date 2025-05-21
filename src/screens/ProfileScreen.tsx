@@ -120,20 +120,40 @@ export const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
             });
 
             if (result.canceled) {
+                console.log('Upload cancelado pelo usuário');
                 return;
             }
 
             const imageUri = result.assets[0].uri;
+            console.log('Imagem selecionada:', imageUri);
 
             // Fazer upload da imagem
+            console.log('Iniciando upload para o Cloudinary...');
             const uploadResult = await uploadService.uploadImage(imageUri);
+            console.log('Resultado do upload:', uploadResult);
             
+            if (!uploadResult.url && !uploadResult.secure_url) {
+                throw new Error('URL da imagem não recebida do servidor');
+            }
+
+            const imageUrl = uploadResult.secure_url || uploadResult.url;
+            console.log('URL da imagem a ser salva:', imageUrl);
+
             // Atualizar o perfil do usuário com a nova URL da imagem
-            const updatedUser = await authService.updateUser({ profileImage: uploadResult.url });
+            console.log('Atualizando perfil com a nova imagem...');
+            const updatedUser = await authService.updateUser({ 
+                profileImage: imageUrl
+            });
+            console.log('Perfil atualizado:', updatedUser);
+
+            if (!updatedUser.profileImage) {
+                throw new Error('A imagem não foi salva no perfil');
+            }
+
             setUser(updatedUser);
-            
             Alert.alert('Sucesso', 'Imagem de perfil atualizada com sucesso!');
         } catch (error: any) {
+            console.error('Erro detalhado ao atualizar imagem:', error);
             Alert.alert('Erro', error.message || 'Não foi possível atualizar a imagem de perfil');
         } finally {
             setUploadingImage(false);
@@ -287,7 +307,7 @@ export const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
                                 autoCapitalize="none"
                             />
 
-                            <Text style={styles.sectionTitle}>Alterar Senha (opcional)</Text>
+                            <Text style={[styles.sectionTitle, { marginBottom: 25 }]}>Alterar Senha (opcional)</Text>
 
                             <TextInput
                                 style={styles.input}
@@ -326,10 +346,10 @@ export const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
                             </TouchableOpacity>
 
                             <TouchableOpacity
-                                style={styles.cancelButton}
+                                style={[styles.saveButton, { backgroundColor: '#B48E7B' }]}
                                 onPress={() => setShowEditModal(false)}
                             >
-                                <Text style={styles.cancelButtonText}>Cancelar</Text>
+                                <Text style={styles.saveButtonText}>Cancelar</Text>
                             </TouchableOpacity>
                         </ScrollView>
                     </View>
@@ -342,19 +362,19 @@ export const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#B48E7B',
+        backgroundColor: '#F8ECEC',
     },
     safeArea: {
         flex: 1,
-        backgroundColor: '#B48E7B',
+        backgroundColor: '#F8ECEC',
     },
     scrollView: {
         flex: 1,
-        backgroundColor: '#B48E7B',
+        backgroundColor: '#F8ECEC',
     },
     scrollViewContent: {
         flexGrow: 1,
-        backgroundColor: '#B48E7B',
+        backgroundColor: '#F8ECEC',
     },
     topBar: {
         flexDirection: 'row',
@@ -607,16 +627,6 @@ const styles = StyleSheet.create({
         color: '#FFF',
         textAlign: 'center',
         fontSize: 18,
-        fontFamily: 'serif',
-    },
-    cancelButton: {
-        padding: 15,
-        marginTop: 10,
-    },
-    cancelButtonText: {
-        color: '#000',
-        textAlign: 'center',
-        fontSize: 16,
         fontFamily: 'serif',
     },
 }); 
