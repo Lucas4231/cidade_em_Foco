@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,9 +12,22 @@ import { Publicacao } from '../services/api';
 interface PublicacaoCardProps {
   publicacao: Publicacao;
   onCurtir: (id: number) => void;
+  onDescurtir: (id: number) => void;
 }
 
-export const PublicacaoCard = ({ publicacao, onCurtir }: PublicacaoCardProps) => {
+export const PublicacaoCard = ({ publicacao, onCurtir, onDescurtir }: PublicacaoCardProps) => {
+  const [curtida, setCurtida] = useState(false);
+
+  const handleCurtir = () => {
+    if (curtida) {
+      onDescurtir(publicacao.id);
+      setCurtida(false);
+    } else {
+      onCurtir(publicacao.id);
+      setCurtida(true);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Cabeçalho com foto e nome do usuário */}
@@ -39,10 +52,10 @@ export const PublicacaoCard = ({ publicacao, onCurtir }: PublicacaoCardProps) =>
       {/* Botão de curtir */}
       <TouchableOpacity
         style={styles.likeButton}
-        onPress={() => onCurtir(publicacao.id)}
+        onPress={handleCurtir}
       >
-        <Text style={styles.likeButtonText}>
-          ❤️ {publicacao.curtidas} curtidas
+        <Text style={[styles.likeButtonText, curtida && styles.likeButtonTextActive]}>
+          {curtida ? '❤️' : '🤍'} {publicacao.curtidas} curtidas
         </Text>
       </TouchableOpacity>
     </View>
@@ -101,5 +114,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#8B6B61',
     fontFamily: 'serif',
+  },
+  likeButtonTextActive: {
+    color: '#FF4B4B',
   },
 }); 

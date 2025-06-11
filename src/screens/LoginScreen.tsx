@@ -67,6 +67,11 @@ const LoginScreen = ({ setShowRegister, onLoginSuccess }: LoginScreenProps) => {
           style={styles.logo}
           resizeMode="contain"
         />
+        <Image
+          source={require('../../assets/CEF - Letras.png')}
+          style={styles.letters}
+          resizeMode="contain"
+        />
 
         <Text style={styles.title}>Login</Text>
 
@@ -146,8 +151,14 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   logo: {
-    width: 150,
-    height: 150,
+    width: 200,
+    height: 200,
+    alignSelf: 'center',
+    marginBottom: 0,
+  },
+  letters: {
+    width: 250,
+    height: 60,
     alignSelf: 'center',
     marginBottom: 25,
   },

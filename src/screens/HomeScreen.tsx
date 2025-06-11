@@ -97,6 +97,15 @@ export const HomeScreen = ({ onLogout }: HomeScreenProps) => {
         }
     };
 
+    const handleDescurtir = async (id: number) => {
+        try {
+            await publicacaoService.descurtirPublicacao(id);
+            carregarPublicacoes(); // Recarrega as publicações para atualizar as curtidas
+        } catch (error) {
+            Alert.alert('Erro', 'Não foi possível remover a curtida');
+        }
+    };
+
     const onRefresh = async () => {
         setRefreshing(true);
         await carregarPublicacoes();
@@ -132,6 +141,7 @@ export const HomeScreen = ({ onLogout }: HomeScreenProps) => {
                         <PublicacaoCard
                             publicacao={item}
                             onCurtir={handleCurtir}
+                            onDescurtir={handleDescurtir}
                         />
                     )}
                     keyExtractor={item => item.id.toString()}
