@@ -1,4 +1,5 @@
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Cria a instância do axios com a URL base
 const baseURL = 'https://neondb-3yaa.onrender.com/api';
@@ -13,7 +14,13 @@ export const api = axios.create({
 
 // Interceptor para adicionar o token em todas as requisições
 api.interceptors.request.use(
-    (config) => config,
+    async (config) => {
+        const token = await AsyncStorage.getItem('@CidadeEmFoco:token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
     (error) => {
         console.error('Erro na requisição:', error);
         return Promise.reject(error);
@@ -101,6 +108,20 @@ export interface ProblemReport {
     description: string;
 }
 
+// Interface para a publicação
+export interface Publicacao {
+    id: number;
+    imagem: string;
+    descricao: string;
+    curtidas: number;
+    createdAt: string;
+    usuario: {
+        cod_usuario: number;
+        nome: string;
+        profileImage: string;
+    };
+}
+
 // Serviço de problemas
 export const problemService = {
     // Reportar problema
@@ -186,5 +207,45 @@ export const userService = {
             }
             throw error;
         }
+    }
+};
+
+// Funções para publicações
+export const publicacaoService = {
+    // Criar uma nova publicação
+    async criarPublicacao(formData: FormData): Promise<Publicacao> {
+        try {
+            console.log('Enviando requisição para criar publicação...');
+            const response = await api.post('/publicacoes', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'Accept': 'application/json',
+                },
+                transformRequest: (data, headers) => {
+                    return data; // Não transformar o FormData
+                },
+            });
+            console.log('Resposta recebida:', response.data);
+            return response.data;
+        } catch (error: any) {
+            console.error('Erro na requisição:', error.response?.data || error.message);
+            throw error;
+        }
+    },
+
+    // Buscar todas as publicações
+    async getPublicacoes(): Promise<Publicacao[]> {
+        const response = await api.get('/publicacoes');
+        return response.data;
+    },
+
+    // Curtir uma publicação
+    async curtirPublicacao(id: number): Promise<void> {
+        await api.post(`/publicacoes/${id}/curtir`);
+    },
+
+    // Descurtir uma publicação
+    async descurtirPublicacao(id: number): Promise<void> {
+        await api.post(`/publicacoes/${id}/descurtir`);
     }
 }; 

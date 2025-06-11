@@ -10,11 +10,15 @@ import {
     Image,
     Alert,
     Modal,
-    ActivityIndicator
+    ActivityIndicator,
+    FlatList,
+    RefreshControl
 } from 'react-native';
 import { authService } from '../services/auth';
+import { publicacaoService, Publicacao } from '../services/api';
 import { ProfileScreen } from './ProfileScreen';
 import { ReportProblem } from './ReportProblem';
+import { PublicacaoCard } from '../components/PublicacaoCard';
 
 interface HomeScreenProps {
     onLogout: () => void;
@@ -24,11 +28,28 @@ export const HomeScreen = ({ onLogout }: HomeScreenProps) => {
     const [currentScreen, setCurrentScreen] = useState<'home' | 'profile'>('home');
     const [showAddModal, setShowAddModal] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [publicacoes, setPublicacoes] = useState<Publicacao[]>([]);
     const [retryCount, setRetryCount] = useState(0);
+
+    const carregarPublicacoes = async () => {
+        try {
+            const data = await publicacaoService.getPublicacoes();
+            setPublicacoes(data);
+        } catch (error) {
+            Alert.alert('Erro', 'Não foi possível carregar as publicações');
+        }
+    };
 
     useEffect(() => {
         checkServerStatus();
     }, [retryCount]);
+
+    useEffect(() => {
+        if (!loading) {
+            carregarPublicacoes();
+        }
+    }, [loading]);
 
     const checkServerStatus = async () => {
         try {
@@ -67,8 +88,26 @@ export const HomeScreen = ({ onLogout }: HomeScreenProps) => {
         }
     };
 
+    const handleCurtir = async (id: number) => {
+        try {
+            await publicacaoService.curtirPublicacao(id);
+            carregarPublicacoes(); // Recarrega as publicações para atualizar as curtidas
+        } catch (error) {
+            Alert.alert('Erro', 'Não foi possível curtir a publicação');
+        }
+    };
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await carregarPublicacoes();
+        setRefreshing(false);
+    };
+
     if (currentScreen === 'profile') {
-        return <ProfileScreen onBack={() => setCurrentScreen('home')} />;
+        return <ProfileScreen 
+            onBack={() => setCurrentScreen('home')} 
+            onLogout={handleLogout}
+        />;
     }
 
     if (loading) {
@@ -86,17 +125,25 @@ export const HomeScreen = ({ onLogout }: HomeScreenProps) => {
         <SafeAreaView style={styles.safeArea}>
             <StatusBar backgroundColor="#F8ECEC" barStyle="dark-content" />
             <View style={styles.container}>
-                {/* Área principal do conteúdo */}
-                <View style={styles.content}>
-                    <Text style={styles.title}>Bem-vindo!</Text>
-
-                    <TouchableOpacity 
-                        style={styles.logoutButton}
-                        onPress={handleLogout}
-                    >
-                        <Text style={styles.logoutButtonText}>Sair</Text>
-                    </TouchableOpacity>
-                </View>
+                {/* Lista de publicações */}
+                <FlatList
+                    data={publicacoes}
+                    renderItem={({ item }) => (
+                        <PublicacaoCard
+                            publicacao={item}
+                            onCurtir={handleCurtir}
+                        />
+                    )}
+                    keyExtractor={item => item.id.toString()}
+                    contentContainerStyle={styles.listContent}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            colors={['#8B6B61']}
+                        />
+                    }
+                />
 
                 {/* Menu de navegação inferior */}
                 <View style={styles.bottomNav}>
@@ -146,7 +193,7 @@ export const HomeScreen = ({ onLogout }: HomeScreenProps) => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Modal de Relatar Problema */}
+                {/* Modal de Nova Publicação */}
                 <Modal
                     visible={showAddModal}
                     animationType="slide"
@@ -155,7 +202,10 @@ export const HomeScreen = ({ onLogout }: HomeScreenProps) => {
                 >
                     <View style={styles.modalContainer}>
                         <View style={styles.modalContent}>
-                            <ReportProblem onClose={() => setShowAddModal(false)} />
+                            <ReportProblem 
+                                onClose={() => setShowAddModal(false)}
+                                onPublicacaoCriada={carregarPublicacoes}
+                            />
                         </View>
                     </View>
                 </Modal>
@@ -293,5 +343,8 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#8B6B61',
         fontFamily: 'serif',
-    }
+    },
+    listContent: {
+        padding: 15,
+    },
 }); 

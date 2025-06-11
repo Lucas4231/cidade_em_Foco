@@ -2,6 +2,7 @@ import { api } from './api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TOKEN_KEY = '@CidadeEmFoco:token';
+const USER_KEY = '@CidadeEmFoco:user';
 
 export interface AuthUser {
     cod_usuario: number;
@@ -28,12 +29,17 @@ export const authService = {
     // Login de usuário
     async login(email: string, password: string): Promise<AuthResponse> {
         try {
+            console.log('Tentando fazer login...');
             const response = await api.post('/auth/login', { email, password });
-            if (response.data && response.data.token) {
-                await this.setAuth(response.data.token);
-            }
-            return response.data;
+            const { token, user } = response.data;
+
+            console.log('Login bem sucedido, salvando token e usuário...');
+            await AsyncStorage.setItem(TOKEN_KEY, token);
+            await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
+
+            return { token, user };
         } catch (error: any) {
+            console.error('Erro no login:', error);
             if (error.response?.data?.mensagem) {
                 throw new Error(error.response.data.mensagem);
             }
@@ -73,10 +79,12 @@ export const authService = {
     // Recuperar dados do usuário
     async getUser(): Promise<AuthUser | null> {
         try {
-            // Primeiro verifica se tem token
+            console.log('Buscando usuário atual...');
             const token = await this.getStoredToken();
+            console.log('Token encontrado:', token ? 'Sim' : 'Não');
+
             if (!token) {
-                return null;
+                throw new Error('Usuário não autenticado');
             }
 
             const response = await api.get('/user/me');
@@ -110,13 +118,14 @@ export const authService = {
     // Fazer logout
     async logout() {
         try {
-            // Remove o token do AsyncStorage
+            console.log('Fazendo logout...');
             await AsyncStorage.removeItem(TOKEN_KEY);
+            await AsyncStorage.removeItem(USER_KEY);
             
             // Remove o token do header do axios
             delete api.defaults.headers.common['Authorization'];
         } catch (error) {
-            console.error('Erro ao fazer logout:', error);
+            console.error('Erro no logout:', error);
             throw new Error('Erro ao fazer logout');
         }
     },
@@ -129,6 +138,18 @@ export const authService = {
         } catch (error: any) {
             console.error('Erro ao atualizar usuário:', error);
             throw new Error(error.response?.data?.mensagem || 'Erro ao atualizar perfil');
+        }
+    },
+
+    async getToken() {
+        try {
+            console.log('Buscando token...');
+            const token = await AsyncStorage.getItem(TOKEN_KEY);
+            console.log('Token encontrado:', token ? 'Sim' : 'Não');
+            return token;
+        } catch (error) {
+            console.error('Erro ao buscar token:', error);
+            throw error;
         }
     }
 }; 

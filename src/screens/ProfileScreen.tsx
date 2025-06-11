@@ -21,9 +21,10 @@ import * as ImagePicker from 'expo-image-picker';
 
 interface ProfileScreenProps {
     onBack: () => void;
+    onLogout: () => void;
 }
 
-export const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
+export const ProfileScreen = ({ onBack, onLogout }: ProfileScreenProps) => {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
     const [showEditModal, setShowEditModal] = useState(false);
@@ -160,6 +161,16 @@ export const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
         }
     };
 
+    const handleLogout = async () => {
+        try {
+            await authService.logout();
+            onLogout();
+        } catch (error) {
+            console.error('Erro ao fazer logout:', error);
+            Alert.alert('Erro', 'Não foi possível fazer logout');
+        }
+    };
+
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
@@ -270,12 +281,15 @@ export const ProfileScreen = ({ onBack }: ProfileScreenProps) => {
                                 <Text style={styles.settingText}>Privacidade</Text>
                                 <Text style={styles.settingArrow}>→</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.settingItem}>
-                                <Text style={styles.settingText}>Ajuda</Text>
-                                <Text style={styles.settingArrow}>→</Text>
-                            </TouchableOpacity>
                         </View>
                     </View>
+
+                    <TouchableOpacity 
+                        style={styles.logoutButton}
+                        onPress={handleLogout}
+                    >
+                        <Text style={styles.logoutButtonText}>Sair</Text>
+                    </TouchableOpacity>
                 </ScrollView>
             </SafeAreaView>
 
@@ -628,5 +642,18 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontSize: 18,
         fontFamily: 'serif',
+    },
+    logoutButton: {
+        backgroundColor: '#8B6B61',
+        padding: 15,
+        borderRadius: 10,
+        marginTop: 20,
+        marginBottom: 30,
+        alignItems: 'center',
+    },
+    logoutButtonText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
 }); 

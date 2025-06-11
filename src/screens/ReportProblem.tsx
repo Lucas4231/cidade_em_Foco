@@ -12,13 +12,14 @@ import {
   Platform
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { api } from '../services/api';
+import { publicacaoService } from '../services/api';
 
 interface ReportProblemProps {
   onClose: () => void;
+  onPublicacaoCriada?: () => void;
 }
 
-export const ReportProblem = ({ onClose }: ReportProblemProps) => {
+export const ReportProblem = ({ onClose, onPublicacaoCriada }: ReportProblemProps) => {
   const [image, setImage] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -53,9 +54,11 @@ export const ReportProblem = ({ onClose }: ReportProblemProps) => {
       });
 
       if (!result.canceled) {
+        console.log('Imagem selecionada:', result.assets[0].uri);
         setImage(result.assets[0].uri);
       }
     } catch (error) {
+      console.error('Erro ao acessar a câmera:', error);
       Alert.alert('Erro', 'Não foi possível acessar a câmera');
     }
   };
@@ -74,7 +77,10 @@ export const ReportProblem = ({ onClose }: ReportProblemProps) => {
     setLoading(true);
 
     try {
-      // Criar um FormData para enviar a imagem
+      console.log('Iniciando envio da publicação...');
+      console.log('Imagem:', image);
+      console.log('Descrição:', description);
+
       const formData = new FormData();
       formData.append('photo', {
         uri: image,
@@ -83,17 +89,17 @@ export const ReportProblem = ({ onClose }: ReportProblemProps) => {
       } as any);
       formData.append('description', description);
 
-      // Enviar para o backend
-      await api.post('/report-problem', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      console.log('FormData criado:', formData);
 
-      Alert.alert('Sucesso', 'Problema reportado com sucesso!');
+      const response = await publicacaoService.criarPublicacao(formData);
+      console.log('Resposta do servidor:', response);
+      
+      Alert.alert('Sucesso', 'Publicação criada com sucesso!');
+      onPublicacaoCriada?.();
       onClose();
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível enviar o relatório. Tente novamente.');
+      console.error('Erro ao criar publicação:', error);
+      Alert.alert('Erro', 'Não foi possível criar a publicação. Tente novamente.');
     } finally {
       setLoading(false);
     }
